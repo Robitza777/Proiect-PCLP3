@@ -1,0 +1,12 @@
+# Cache-ul Visual Studio
+.vs/
+
+# Folderele de build și compilare
+[Bb]in/
+[Oo]bj/
+
+# Fișiere de salvare locale/user code
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
