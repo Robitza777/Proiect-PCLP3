@@ -33,6 +33,9 @@
         // Row 3 – decision buttons
         private System.Windows.Forms.FlowLayoutPanel flowDecisions;
 
+        // Inventory button (top-right of title row)
+        private System.Windows.Forms.Button btnInventory;
+
         protected override void Dispose(bool disposing)
         {
             if (disposing && (components != null)) components.Dispose();
@@ -89,9 +92,38 @@
                 Text = "Story Engine Player",
                 Font = new System.Drawing.Font("Palatino Linotype", 18f, System.Drawing.FontStyle.Bold),
                 ForeColor = System.Drawing.Color.FromArgb(220, 195, 120),
-                BackColor = System.Drawing.Color.FromArgb(24, 20, 14),
+                BackColor = System.Drawing.Color.Transparent,
                 TextAlign = System.Drawing.ContentAlignment.MiddleCenter,
                 Padding = new System.Windows.Forms.Padding(0, 4, 0, 0)
+            };
+
+            btnInventory = new System.Windows.Forms.Button
+            {
+                Text = "🎒 Inventar",
+                Size = new System.Drawing.Size(110, 32),
+                FlatStyle = System.Windows.Forms.FlatStyle.Flat,
+                BackColor = System.Drawing.Color.FromArgb(45, 40, 28),
+                ForeColor = System.Drawing.Color.FromArgb(210, 190, 130),
+                Font = new System.Drawing.Font("Segoe UI", 9f),
+                Cursor = System.Windows.Forms.Cursors.Hand,
+                Enabled = false
+            };
+            btnInventory.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(90, 80, 50);
+            btnInventory.Click += btnInventory_Click;
+
+            var panelTitle = new System.Windows.Forms.Panel
+            {
+                Dock = System.Windows.Forms.DockStyle.Fill,
+                BackColor = System.Drawing.Color.FromArgb(24, 20, 14)
+            };
+            panelTitle.Controls.Add(lblTitle);   // adăugat primul = z-order jos
+            panelTitle.Controls.Add(btnInventory); // adăugat al doilea = deasupra
+            panelTitle.SizeChanged += (s, e) =>
+            {
+                btnInventory.Location = new System.Drawing.Point(
+                    panelTitle.ClientSize.Width - btnInventory.Width - 10,
+                    (panelTitle.ClientSize.Height - btnInventory.Height) / 2);
+                btnInventory.BringToFront();
             };
 
             // ── Row 1: HUD ─────────────────────────────────────────────────
@@ -170,7 +202,7 @@
             };
 
             // ── Assemble ───────────────────────────────────────────────────
-            layoutRoot.Controls.Add(lblTitle, 0, 0);
+            layoutRoot.Controls.Add(panelTitle, 0, 0);
             layoutRoot.Controls.Add(panelHud, 0, 1);
             layoutRoot.Controls.Add(panelContent, 0, 2);
             layoutRoot.Controls.Add(flowDecisions, 0, 3);
@@ -196,7 +228,7 @@
         private static readonly System.Drawing.Color BgHover = System.Drawing.Color.FromArgb(65, 55, 35);
         private static readonly System.Drawing.Color BgDropdown = System.Drawing.Color.FromArgb(32, 28, 20);
         private static readonly System.Drawing.Color TextNormal = System.Drawing.Color.FromArgb(210, 195, 150);
-        private static readonly System.Drawing.Color TextDisabled = System.Drawing.Color.FromArgb(100, 90, 65);
+        private static readonly System.Drawing.Color TextDisabled = System.Drawing.Color.FromArgb(100, 90, 67);
         private static readonly System.Drawing.Color SeparatorColor = System.Drawing.Color.FromArgb(70, 62, 42);
 
         // Bara de sus (MenuStrip)

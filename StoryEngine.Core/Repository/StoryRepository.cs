@@ -8,16 +8,9 @@ using StoryEngine.Models;
 
 namespace StoryEngine.Repository
 {
-    /// <summary>
-    /// Handles loading and saving StoryDefinition (ZIP + JSON) and GameState (JSON save files).
-    /// The ZIP contains:
-    ///   story.json  — the StoryDefinition
-    ///   images/     — optional background images referenced by blocks
-    /// </summary>
     public class StoryRepository
     {
         private const string StoryEntryName = "story.json";
-        private const string SaveEntryName  = "save.json";
 
         private static readonly JsonSerializerOptions JsonOptions = new JsonSerializerOptions
         {
@@ -27,15 +20,11 @@ namespace StoryEngine.Repository
             Converters = { new JsonStringEnumConverter() }
         };
 
-        // ------------------------------------------------------------------ //
-        //  Story (ZIP)
-        // ------------------------------------------------------------------ //
+        // ── Story (ZIP) ───────────────────────────────────────────────────
 
         public void SaveStory(StoryDefinition story, string zipPath)
         {
-            // Overwrite existing file
             if (File.Exists(zipPath)) File.Delete(zipPath);
-
             using var zip = ZipFile.Open(zipPath, ZipArchiveMode.Create);
             var entry = zip.CreateEntry(StoryEntryName);
             using var stream = entry.Open();
@@ -48,7 +37,6 @@ namespace StoryEngine.Repository
             using var zip = ZipFile.OpenRead(zipPath);
             var entry = zip.GetEntry(StoryEntryName)
                 ?? throw new FileNotFoundException($"'{StoryEntryName}' not found inside ZIP.");
-
             using var stream = entry.Open();
             using var reader = new StreamReader(stream, Encoding.UTF8);
             string json = reader.ReadToEnd();
@@ -56,14 +44,11 @@ namespace StoryEngine.Repository
                 ?? throw new InvalidDataException("Failed to deserialize story.");
         }
 
-        // ------------------------------------------------------------------ //
-        //  Game state (save / load)
-        // ------------------------------------------------------------------ //
+        // ── Game state ────────────────────────────────────────────────────
 
         public void SaveGameState(GameState state, string savePath)
         {
-            string json = JsonSerializer.Serialize(state, JsonOptions);
-            File.WriteAllText(savePath, json, Encoding.UTF8);
+            File.WriteAllText(savePath, JsonSerializer.Serialize(state, JsonOptions), Encoding.UTF8);
         }
 
         public GameState LoadGameState(string savePath)
@@ -73,24 +58,34 @@ namespace StoryEngine.Repository
                 ?? throw new InvalidDataException("Failed to deserialize game state.");
         }
 
-        // ------------------------------------------------------------------ //
-        //  Embedded image extraction helper (used by the Player)
-        // ------------------------------------------------------------------ //
+        // ── Image loading ─────────────────────────────────────────────────
 
         /// <summary>
-        /// Extracts an image from the story ZIP into a temp file and returns the path.
-        /// Returns null if the image entry doesn't exist.
+        /// Loads an image entry from the ZIP as raw bytes.
+        /// Returns null if the entry does not exist.
+        /// Returning byte[] keeps this library UI-agnostic (no System.Drawing dependency).
+        /// The caller (Player) constructs a Bitmap from the bytes.
         /// </summary>
-        public string ExtractImage(string zipPath, string imageFilename)
+        public byte[] LoadImageBytesFromZip(string zipPath, string imageFilename)
         {
-            using var zip = ZipFile.OpenRead(zipPath);
-            string entryName = $"images/{imageFilename}";
-            var entry = zip.GetEntry(entryName);
-            if (entry == null) return null;
+            if (string.IsNullOrEmpty(zipPath) || string.IsNullOrEmpty(imageFilename))
+                return null;
 
-            string tempPath = Path.Combine(Path.GetTempPath(), imageFilename);
-            entry.ExtractToFile(tempPath, overwrite: true);
-            return tempPath;
+            try
+            {
+                using var zip = ZipFile.OpenRead(zipPath);
+                var entry = zip.GetEntry($"images/{imageFilename}");
+                if (entry == null) return null;
+
+                using var zipStream = entry.Open();
+                using var ms = new MemoryStream();
+                zipStream.CopyTo(ms);
+                return ms.ToArray();
+            }
+            catch
+            {
+                return null;
+            }
         }
     }
 }
