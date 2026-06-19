@@ -250,8 +250,9 @@ namespace StoryEngine.Player
             var icon = TryGetDecisionItemIcon(decision);
             if (icon != null)
             {
-                
-                    btn.Image = new Bitmap(icon, new Size(24, 24));
+                    Image displayIcon = enabled ? icon : ImageEffects.ToGrayscale(icon);
+
+                    btn.Image = new Bitmap(displayIcon, new Size(24, 24));
                     btn.ImageAlign = ContentAlignment.MiddleLeft;
                     btn.TextImageRelation = TextImageRelation.ImageBeforeText;
                     btn.Padding = new Padding(4, 0, 0, 0);
