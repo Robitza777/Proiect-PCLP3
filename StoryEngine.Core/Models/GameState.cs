@@ -20,6 +20,13 @@ namespace StoryEngine.Models
         public bool IsGameOver { get; set; }
 
         /// <summary>
+        /// Outcome text of the last decision taken, to be shown at the top of
+        /// CurrentBlock's text. Null on a fresh game (no decision taken yet)
+        /// or right after StartNewGame/restart.
+        /// </summary>
+        public string LastResultText { get; set; }
+
+        /// <summary>
         /// Creates a fresh GameState from a StoryDefinition (used on New Game / Restart).
         /// </summary>
         public static GameState CreateNew(StoryDefinition story)
@@ -28,7 +35,8 @@ namespace StoryEngine.Models
             {
                 CurrentBlock = story.StartBlock,
                 Day = 1,
-                IsGameOver = false
+                IsGameOver = false,
+                LastResultText = null
             };
 
             foreach (var prop in story.Properties)

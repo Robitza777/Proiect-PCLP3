@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using StoryEngine.Models;
 
 namespace StoryEngine.Engine
@@ -14,10 +15,7 @@ namespace StoryEngine.Engine
         private readonly StoryDefinition _story;
         private readonly Random _random = new Random();
 
-        // Quick lookup: blockId -> StoryBlock
         private readonly Dictionary<string, StoryBlock> _blockMap;
-
-        // Quick lookup: propertyKey -> StatePropertyDefinition
         private readonly Dictionary<string, StatePropertyDefinition> _propMap;
 
         public GameState State { get; private set; }
@@ -26,7 +24,7 @@ namespace StoryEngine.Engine
         {
             _story = story;
             _blockMap = story.Blocks.ToDictionary(b => b.Id);
-            _propMap  = story.Properties.ToDictionary(p => p.Key);
+            _propMap = story.Properties.ToDictionary(p => p.Key);
         }
 
         // ------------------------------------------------------------------ //
@@ -54,9 +52,6 @@ namespace StoryEngine.Engine
             return block;
         }
 
-        /// <summary>
-        /// Returns only the decisions whose conditions are satisfied in the current state.
-        /// </summary>
         public List<DecisionDefinition> GetAvailableDecisions()
         {
             var block = GetCurrentBlock();
@@ -70,16 +65,24 @@ namespace StoryEngine.Engine
         // ------------------------------------------------------------------ //
 
         /// <summary>
-        /// Applies the effects of a decision and navigates to its target block.
-        /// Returns the block now active (may differ from decision.TargetBlock after redirects).
+        /// Applies the effects of a decision, computes the result text (fixed
+        /// or auto-generated), and navigates to its target block.
+        /// State.LastResultText is set so the UI can show it at the top of
+        /// the next block's text. Returns the block now active (may differ
+        /// from decision.TargetBlock after a property-boundary redirect).
         /// </summary>
         public StoryBlock ChooseDecision(DecisionDefinition decision)
         {
+            // Snapshot values BEFORE effects, so we can describe deltas accurately
+            var before = new Dictionary<string, int>(State.Properties);
+
             ApplyEffects(decision.Effects);
+
+            State.LastResultText = BuildResultText(decision, before, State.Properties);
+
             State.CurrentBlock = decision.TargetBlock;
             State.Day++;
 
-            // Redirect check: properties that have hit min/max
             string redirect = GetPropertyRedirect();
             if (redirect != null)
                 State.CurrentBlock = redirect;
@@ -92,13 +95,44 @@ namespace StoryEngine.Engine
         }
 
         // ------------------------------------------------------------------ //
+        //  Result text (fixed or auto-generated from effects)
+        // ------------------------------------------------------------------ //
+
+        private string BuildResultText(DecisionDefinition decision,
+            Dictionary<string, int> before, Dictionary<string, int> after)
+        {
+            if (!string.IsNullOrWhiteSpace(decision.ResultText))
+                return decision.ResultText;
+
+            if (decision.Effects == null || decision.Effects.Count == 0)
+                return null; // nimic de raportat
+
+            var parts = new List<string>();
+            foreach (var effect in decision.Effects)
+            {
+                if (!_propMap.TryGetValue(effect.Property, out var propDef))
+                    continue;
+
+                int beforeVal = before.TryGetValue(effect.Property, out var b) ? b : 0;
+                int afterVal = after.TryGetValue(effect.Property, out var a) ? a : 0;
+                int delta = afterVal - beforeVal;
+
+                if (delta == 0) continue; // clamped la aceeași valoare — nu raportăm
+
+                string label = propDef.DisplayName ?? effect.Property;
+                string sign = delta > 0 ? "+" : "";
+                parts.Add($"{label} {sign}{delta}");
+            }
+
+            if (parts.Count == 0) return null;
+
+            return "Rezultat: " + string.Join(", ", parts) + ".";
+        }
+
+        // ------------------------------------------------------------------ //
         //  Random event selection (Milestone 2 feature)
         // ------------------------------------------------------------------ //
 
-        /// <summary>
-        /// Picks a random block from the given event category whose conditions are satisfied.
-        /// Returns null if no valid block is found.
-        /// </summary>
         public StoryBlock PickRandomEvent(string category)
         {
             var candidates = _story.Blocks
@@ -120,13 +154,10 @@ namespace StoryEngine.Engine
             {
                 case "AND":
                     return condition.Operands.All(EvaluateCondition);
-
                 case "OR":
                     return condition.Operands.Any(EvaluateCondition);
-
                 case "COMPARISON":
                     return EvaluateComparison(condition);
-
                 default:
                     throw new ArgumentException($"Unknown condition type: '{condition.Type}'");
             }
@@ -139,9 +170,9 @@ namespace StoryEngine.Engine
 
             switch (c.Operator)
             {
-                case "<":  return current <  c.Value;
+                case "<": return current < c.Value;
                 case "<=": return current <= c.Value;
-                case ">":  return current >  c.Value;
+                case ">": return current > c.Value;
                 case ">=": return current >= c.Value;
                 case "==": return current == c.Value;
                 case "!=": return current != c.Value;
@@ -173,7 +204,6 @@ namespace StoryEngine.Engine
                 ? current + effect.Value
                 : effect.Value;
 
-            // Clamp to [min, max]
             State.Properties[effect.Property] = Math.Max(propDef.Min, Math.Min(propDef.Max, raw));
         }
 
@@ -181,11 +211,6 @@ namespace StoryEngine.Engine
         //  Automatic redirects triggered by property boundaries
         // ------------------------------------------------------------------ //
 
-        /// <summary>
-        /// Checks all properties for boundary violations after effects are applied.
-        /// Returns the redirect block id, or null if no redirect is needed.
-        /// First found wins (check min before max for each property, in definition order).
-        /// </summary>
         private string GetPropertyRedirect()
         {
             foreach (var propDef in _story.Properties)

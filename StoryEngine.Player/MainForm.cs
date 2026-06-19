@@ -139,7 +139,11 @@ namespace StoryEngine.Player
         private void RefreshStoryText(StoryBlock block)
         {
             lblDayCounter.Text = $"Ziua {_engine.State.Day}";
-            txtStoryText.Text = block.Text;
+
+            if (!string.IsNullOrEmpty(_engine.State.LastResultText))
+                txtStoryText.Text = _engine.State.LastResultText + "\n\n" + block.Text;
+            else
+                txtStoryText.Text = block.Text;
         }
 
         // ── HUD ───────────────────────────────────────────────────────────

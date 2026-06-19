@@ -10,6 +10,14 @@ namespace StoryEngine.Models
         /// <summary>Button label shown to the player</summary>
         public string Text { get; set; }
 
+        /// <summary>
+        /// Optional text describing the outcome of this decision, shown at the
+        /// TOP of the next block once the player arrives there (e.g. "You ate
+        /// a proper meal and feel better."). If null/empty, the engine falls
+        /// back to an auto-generated summary of the Effects.
+        /// </summary>
+        public string ResultText { get; set; }
+
         /// <summary>Id of the block this decision leads to</summary>
         public string TargetBlock { get; set; }
 
