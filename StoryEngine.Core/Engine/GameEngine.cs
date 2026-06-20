@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using StoryEngine.Models;
 
 namespace StoryEngine.Engine
@@ -65,11 +64,12 @@ namespace StoryEngine.Engine
         // ------------------------------------------------------------------ //
 
         /// <summary>
-        /// Applies the effects of a decision, computes the result text (fixed
-        /// or auto-generated), and navigates to its target block.
-        /// State.LastResultText is set so the UI can show it at the top of
-        /// the next block's text. Returns the block now active (may differ
-        /// from decision.TargetBlock after a property-boundary redirect).
+        /// Applies the effects of a decision, computes BOTH the fixed result
+        /// text (author-written, may be null) and the auto-generated effects
+        /// summary (e.g. "Health -5, Food +10"), then navigates to the target
+        /// block. Both are stored on State so the UI can choose what to show
+        /// via a toggle. Returns the block now active (may differ from
+        /// decision.TargetBlock after a property-boundary redirect).
         /// </summary>
         public StoryBlock ChooseDecision(DecisionDefinition decision)
         {
@@ -78,7 +78,9 @@ namespace StoryEngine.Engine
 
             ApplyEffects(decision.Effects);
 
-            State.LastResultText = BuildResultText(decision, before, State.Properties);
+            // Mereu calculăm ambele — UI-ul decide ce arată
+            State.LastResultText = string.IsNullOrWhiteSpace(decision.ResultText) ? null : decision.ResultText;
+            State.LastEffectsSummary = BuildEffectsSummary(decision, before, State.Properties);
 
             State.CurrentBlock = decision.TargetBlock;
             State.Day++;
@@ -95,17 +97,14 @@ namespace StoryEngine.Engine
         }
 
         // ------------------------------------------------------------------ //
-        //  Result text (fixed or auto-generated from effects)
+        //  Auto-generated effects summary (always computed, independent of ResultText)
         // ------------------------------------------------------------------ //
 
-        private string BuildResultText(DecisionDefinition decision,
+        private string BuildEffectsSummary(DecisionDefinition decision,
             Dictionary<string, int> before, Dictionary<string, int> after)
         {
-            if (!string.IsNullOrWhiteSpace(decision.ResultText))
-                return decision.ResultText;
-
             if (decision.Effects == null || decision.Effects.Count == 0)
-                return null; // nimic de raportat
+                return null;
 
             var parts = new List<string>();
             foreach (var effect in decision.Effects)
@@ -119,14 +118,27 @@ namespace StoryEngine.Engine
 
                 if (delta == 0) continue; // clamped la aceeași valoare — nu raportăm
 
+                // Pentru iteme (Min=0, Max=1) raportăm "+ NumeObiect" în loc de "+1"
+                bool isItem = propDef.Key.StartsWith("item.");
                 string label = propDef.DisplayName ?? effect.Property;
-                string sign = delta > 0 ? "+" : "";
-                parts.Add($"{label} {sign}{delta}");
+
+                if (isItem && delta > 0)
+                {
+                    parts.Add($"+ {label}");
+                }
+                else if (isItem && delta < 0)
+                {
+                    parts.Add($"- {label}");
+                }
+                else
+                {
+                    string sign = delta > 0 ? "+" : "";
+                    parts.Add($"{label} {sign}{delta}");
+                }
             }
 
             if (parts.Count == 0) return null;
-
-            return "Rezultat: " + string.Join(", ", parts) + ".";
+            return string.Join(",  ", parts);
         }
 
         // ------------------------------------------------------------------ //

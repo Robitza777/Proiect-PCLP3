@@ -18,6 +18,7 @@
         private System.Windows.Forms.TableLayoutPanel layoutRoot;
 
         // Row 0 – title bar
+        private System.Windows.Forms.Panel panelTitle;
         private System.Windows.Forms.Label lblTitle;
 
         // Row 1 – HUD strip
@@ -35,6 +36,10 @@
 
         // Inventory button (top-right of title row)
         private System.Windows.Forms.Button btnInventory;
+
+        // Toggle button: arată text-rezultat vs sumar de efecte
+        private System.Windows.Forms.Button btnShowEffects;
+        private bool _showEffectsActive = false;
 
         protected override void Dispose(bool disposing)
         {
@@ -86,6 +91,12 @@
             layoutRoot.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 180));  // decisions
 
             // ── Row 0: Title ───────────────────────────────────────────────
+            panelTitle = new System.Windows.Forms.Panel
+            {
+                Dock = System.Windows.Forms.DockStyle.Fill,
+                BackColor = System.Drawing.Color.FromArgb(24, 20, 14)
+            };
+
             lblTitle = new System.Windows.Forms.Label
             {
                 Dock = System.Windows.Forms.DockStyle.Fill,
@@ -111,19 +122,42 @@
             btnInventory.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(90, 80, 50);
             btnInventory.Click += btnInventory_Click;
 
-            var panelTitle = new System.Windows.Forms.Panel
+            btnShowEffects = new System.Windows.Forms.Button
             {
-                Dock = System.Windows.Forms.DockStyle.Fill,
-                BackColor = System.Drawing.Color.FromArgb(24, 20, 14)
+                Text = "☐ Arată efecte",
+                Size = new System.Drawing.Size(110, 32),
+                FlatStyle = System.Windows.Forms.FlatStyle.Flat,
+                BackColor = System.Drawing.Color.FromArgb(45, 40, 28),
+                ForeColor = System.Drawing.Color.FromArgb(210, 190, 130),
+                Font = new System.Drawing.Font("Segoe UI", 9f),
+                Cursor = System.Windows.Forms.Cursors.Hand,
+                Enabled = false
             };
-            panelTitle.Controls.Add(lblTitle);   // adăugat primul = z-order jos
-            panelTitle.Controls.Add(btnInventory); // adăugat al doilea = deasupra
+            btnShowEffects.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(90, 80, 50);
+            btnShowEffects.Click += (s, e) =>
+            {
+                _showEffectsActive = !_showEffectsActive;
+                btnShowEffects.Text = _showEffectsActive ? "☑ Arată efecte" : "☐ Arată efecte";
+
+                if (_engine != null)
+                    RefreshStoryText(_engine.GetCurrentBlock());
+            };
+
+            panelTitle.Controls.Add(lblTitle);
+            panelTitle.Controls.Add(btnInventory);
+            panelTitle.Controls.Add(btnShowEffects);
+
             panelTitle.SizeChanged += (s, e) =>
             {
                 btnInventory.Location = new System.Drawing.Point(
                     panelTitle.ClientSize.Width - btnInventory.Width - 10,
                     (panelTitle.ClientSize.Height - btnInventory.Height) / 2);
                 btnInventory.BringToFront();
+
+                btnShowEffects.Location = new System.Drawing.Point(
+                    btnInventory.Left - btnShowEffects.Width - 8,
+                    (panelTitle.ClientSize.Height - btnShowEffects.Height) / 2);
+                btnShowEffects.BringToFront();
             };
 
             // ── Row 1: HUD ─────────────────────────────────────────────────

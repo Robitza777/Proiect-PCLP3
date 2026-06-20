@@ -20,11 +20,20 @@ namespace StoryEngine.Models
         public bool IsGameOver { get; set; }
 
         /// <summary>
-        /// Outcome text of the last decision taken, to be shown at the top of
-        /// CurrentBlock's text. Null on a fresh game (no decision taken yet)
-        /// or right after StartNewGame/restart.
+        /// Author-written outcome text of the last decision (e.g. "You ate a
+        /// proper meal and feel better."). Null if the decision had no
+        /// ResultText, or right after StartNewGame/restart.
         /// </summary>
         public string LastResultText { get; set; }
+
+        /// <summary>
+        /// Auto-generated summary of the effects applied by the last decision
+        /// (e.g. "Health -5,  Food +10,  + Lantern"). Always computed when
+        /// effects exist, independent of LastResultText. Null if the decision
+        /// had no effects (or all were clamped to no-op), or right after
+        /// StartNewGame/restart.
+        /// </summary>
+        public string LastEffectsSummary { get; set; }
 
         /// <summary>
         /// Creates a fresh GameState from a StoryDefinition (used on New Game / Restart).
@@ -36,7 +45,8 @@ namespace StoryEngine.Models
                 CurrentBlock = story.StartBlock,
                 Day = 1,
                 IsGameOver = false,
-                LastResultText = null
+                LastResultText = null,
+                LastEffectsSummary = null
             };
 
             foreach (var prop in story.Properties)

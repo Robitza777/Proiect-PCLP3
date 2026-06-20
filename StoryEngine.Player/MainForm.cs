@@ -140,10 +140,25 @@ namespace StoryEngine.Player
         {
             lblDayCounter.Text = $"Ziua {_engine.State.Day}";
 
-            if (!string.IsNullOrEmpty(_engine.State.LastResultText))
-                txtStoryText.Text = _engine.State.LastResultText + "\n\n" + block.Text;
+            string prefix = "";
+
+            if (_showEffectsActive)
+            { 
+                if (!string.IsNullOrEmpty(_engine.State.LastEffectsSummary))
+                    prefix = _engine.State.LastEffectsSummary;
+                else if (!string.IsNullOrEmpty(_engine.State.LastResultText))
+                    prefix = _engine.State.LastResultText;
+            }
             else
-                txtStoryText.Text = block.Text;
+            {
+                // Mod normal: textul narativ scris de autor
+                if (!string.IsNullOrEmpty(_engine.State.LastResultText))
+                    prefix = _engine.State.LastResultText;
+            }
+
+            txtStoryText.Text = string.IsNullOrEmpty(prefix)
+                ? block.Text
+                : prefix + "\n\n" + block.Text;
         }
 
         // ── HUD ───────────────────────────────────────────────────────────
@@ -177,7 +192,6 @@ namespace StoryEngine.Player
 
         private void RefreshDecisions(StoryBlock block)
         {
-            // Dispose imagini vechi de pe butoane înainte de clear
             foreach (Control c in flowDecisions.Controls)
                 if (c is Button b)
                 {
@@ -329,6 +343,7 @@ namespace StoryEngine.Player
             menuSave.Enabled = state == UiState.Playing;
             menuLoad.Enabled = state != UiState.NoStory;
             btnInventory.Enabled = state != UiState.NoStory;
+            btnShowEffects.Enabled = state != UiState.NoStory;
 
             switch (state)
             {
