@@ -13,6 +13,13 @@ namespace StoryEngine.Models
 
         /// <summary>Amount to add or the value to set</summary>
         public int Value { get; set; }
+
+        public override string ToString()
+        {
+            string sign = Type == EffectType.ADD && Value > 0 ? "+" : "";
+            string verb = Type == EffectType.ADD ? sign + Value.ToString() : $"= {Value}";
+            return $"{Property} {verb}";
+        }
     }
 
     public enum EffectType
