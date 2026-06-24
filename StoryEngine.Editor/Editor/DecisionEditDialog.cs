@@ -11,6 +11,14 @@ namespace StoryEngine.Editor
     /// Dialog modal pentru editarea unei DecisionDefinition: text, target, icon,
     /// listă de efecte (Add/Edit/Delete) și condiție (via ConditionEditorControl).
     /// La OK, modifică obiectul `decision` direct (pass-by-reference pe clasă).
+    ///
+    /// NOTĂ DE DESIGN: tot conținutul stă într-un FlowLayoutPanel vertical
+    /// (TopDown, WrapContents = false). Fiecare "secțiune" e un control cu
+    /// AutoSize = true adăugat ca rând în flow. Asta elimină complet nevoia
+    /// de a calcula Location pe baza lui .Bottom al elementului anterior —
+    /// sursa suprapunerilor din versiunea precedentă, unde layout-ul unui
+    /// TableLayoutPanel cu AutoSize nu era încă recalculat în momentul în
+    /// care citeam .Bottom pentru elementul următor.
     /// </summary>
     public class DecisionEditDialog : Form
     {
@@ -34,6 +42,10 @@ namespace StoryEngine.Editor
         private ConditionEditorControl _conditionEditor;
         private Panel _panelConditionHost;
 
+        private FlowLayoutPanel _rootFlow;
+
+        private const int ContentWidth = 500;
+
         public DecisionEditDialog(DecisionDefinition decision, StoryDefinition story,
                                    ImageWorkspace images, string workspaceDir)
         {
@@ -47,8 +59,8 @@ namespace StoryEngine.Editor
         private void BuildUi()
         {
             Text = "Editare decizie";
-            Size = new Size(560, 640);
-            MinimumSize = new Size(480, 560);
+            Size = new Size(580, 680);
+            MinimumSize = new Size(520, 560);
             StartPosition = FormStartPosition.CenterParent;
             FormBorderStyle = FormBorderStyle.Sizable;
             MaximizeBox = true;
@@ -56,28 +68,33 @@ namespace StoryEngine.Editor
             BackColor = Color.FromArgb(22, 19, 14);
             ForeColor = Color.FromArgb(210, 195, 160);
 
+            // ── Container principal: scroll + flow vertical ─────────────────
             var scrollPanel = new Panel { Dock = DockStyle.Fill, AutoScroll = true, Padding = new Padding(16) };
 
-            var layout = new TableLayoutPanel
+            _rootFlow = new FlowLayoutPanel
             {
-                ColumnCount = 2,
+                FlowDirection = FlowDirection.TopDown,
+                WrapContents = false,
                 AutoSize = true,
-                Location = new Point(0, 0)
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                Width = ContentWidth + 20
             };
-            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 120));
-            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
 
-            _txtText       = NewTextBox(_decision.Text, multiline: true, height: 50);
+            // ── Câmpuri de bază (fiecare rând e propriul FlowLayoutPanel orizontal) ──
+            _txtText = NewTextBox(_decision.Text, multiline: true, height: 50);
             _txtResultText = NewTextBox(_decision.ResultText, multiline: true, height: 50);
             _cmbTargetBlock = NewBlockCombo(_decision.TargetBlock);
-            _txtIcon       = NewTextBox(_decision.Icon);
+            _txtIcon = NewTextBox(_decision.Icon);
             _txtIcon.ReadOnly = true;
             _txtIcon.Width = 180;
 
-            AddRow(layout, "Text buton:", _txtText);
-            AddRow(layout, "Text rezultat\n(opțional):", _txtResultText);
-            AddRow(layout, "Bloc țintă:", _cmbTargetBlock);
-            AddRow(layout, "Iconiță (opțional):", BuildIconPicker());
+            _rootFlow.Controls.Add(MakeFieldRow("Text buton:", _txtText));
+            _rootFlow.Controls.Add(MakeFieldRow("Text rezultat (opțional):", _txtResultText));
+            _rootFlow.Controls.Add(MakeFieldRow("Bloc țintă:", _cmbTargetBlock));
+            _rootFlow.Controls.Add(MakeFieldRow("Iconiță (opțional):", BuildIconPicker()));
+
+            // ── Separator vizual ──────────────────────────────────────────
+            _rootFlow.Controls.Add(MakeSeparator());
 
             // ── Effects ───────────────────────────────────────────────────
             var lblEffects = new Label
@@ -86,30 +103,35 @@ namespace StoryEngine.Editor
                 Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(220, 195, 120),
                 AutoSize = true,
-                Location = new Point(0, layout.Bottom + 16)
+                Margin = new Padding(0, 4, 0, 4)
             };
+            _rootFlow.Controls.Add(lblEffects);
 
             var effectsToolbar = new FlowLayoutPanel
             {
-                Location = new Point(0, lblEffects.Bottom + 4),
-                Size = new Size(500, 32),
-                FlowDirection = FlowDirection.LeftToRight
+                AutoSize = true,
+                FlowDirection = FlowDirection.LeftToRight,
+                WrapContents = false,
+                Margin = new Padding(0, 0, 0, 4)
             };
-            _btnAddEffect    = NewSmallButton("+ Adaugă");
-            _btnEditEffect   = NewSmallButton("Editează");
+            _btnAddEffect = NewSmallButton("+ Adaugă");
+            _btnEditEffect = NewSmallButton("Editează");
             _btnDeleteEffect = NewSmallButton("Șterge");
             effectsToolbar.Controls.AddRange(new Control[] { _btnAddEffect, _btnEditEffect, _btnDeleteEffect });
+            _rootFlow.Controls.Add(effectsToolbar);
 
             _listEffects = new ListBox
             {
-                Location = new Point(0, effectsToolbar.Bottom + 4),
-                Size = new Size(500, 100),
+                Width = ContentWidth,
+                Height = 100,
                 BackColor = Color.FromArgb(24, 20, 14),
                 ForeColor = Color.FromArgb(215, 200, 160),
                 BorderStyle = BorderStyle.FixedSingle,
-                Font = new Font("Segoe UI", 9.5f)
+                Font = new Font("Segoe UI", 9.5f),
+                Margin = new Padding(0, 0, 0, 12)
             };
             RefreshEffectsList();
+            _rootFlow.Controls.Add(_listEffects);
 
             _btnAddEffect.Click += (s, e) =>
             {
@@ -135,6 +157,9 @@ namespace StoryEngine.Editor
                 RefreshEffectsList();
             };
 
+            // ── Separator vizual ──────────────────────────────────────────
+            _rootFlow.Controls.Add(MakeSeparator());
+
             // ── Condition ─────────────────────────────────────────────────
             _chkHasCondition = new CheckBox
             {
@@ -142,19 +167,22 @@ namespace StoryEngine.Editor
                 Checked = _decision.Condition != null,
                 ForeColor = Color.FromArgb(220, 205, 165),
                 AutoSize = true,
-                Location = new Point(0, _listEffects.Bottom + 16)
+                Margin = new Padding(0, 0, 0, 8)
             };
+            _rootFlow.Controls.Add(_chkHasCondition);
 
             _panelConditionHost = new Panel
             {
-                Location = new Point(0, _chkHasCondition.Bottom + 8),
-                Size = new Size(500, 220),
+                Width = ContentWidth,
+                Height = 220,
                 BackColor = Color.FromArgb(24, 20, 14),
                 BorderStyle = BorderStyle.FixedSingle,
-                Visible = _decision.Condition != null
+                Visible = _decision.Condition != null,
+                Margin = new Padding(0, 0, 0, 16),
+                AutoScroll = true
             };
+            _rootFlow.Controls.Add(_panelConditionHost);
 
-            _decision.Condition ??= null; // explicit: nu creăm condiție implicit
             RebuildConditionEditor();
 
             _chkHasCondition.CheckedChanged += (s, e) =>
@@ -177,13 +205,20 @@ namespace StoryEngine.Editor
                 RebuildConditionEditor();
             };
 
-            // ── Buttons ───────────────────────────────────────────────────
+            // ── Buttons (rând final, separat de flow-ul de scroll) ──────────
+            var buttonsRow = new FlowLayoutPanel
+            {
+                AutoSize = true,
+                FlowDirection = FlowDirection.LeftToRight,
+                WrapContents = false,
+                Margin = new Padding(0, 8, 0, 0)
+            };
             var btnOk = new Button
             {
                 Text = "OK",
                 DialogResult = DialogResult.OK,
                 Size = new Size(90, 32),
-                Location = new Point(0, _panelConditionHost.Bottom + 16),
+                Margin = new Padding(0, 0, 8, 0),
                 FlatStyle = FlatStyle.Flat,
                 BackColor = Color.FromArgb(60, 90, 50),
                 ForeColor = Color.FromArgb(220, 240, 200)
@@ -193,27 +228,71 @@ namespace StoryEngine.Editor
                 Text = "Anulează",
                 DialogResult = DialogResult.Cancel,
                 Size = new Size(90, 32),
-                Location = new Point(100, _panelConditionHost.Bottom + 16),
                 FlatStyle = FlatStyle.Flat,
                 BackColor = Color.FromArgb(45, 40, 30),
                 ForeColor = Color.FromArgb(210, 195, 160)
             };
+            buttonsRow.Controls.Add(btnOk);
+            buttonsRow.Controls.Add(btnCancel);
+            _rootFlow.Controls.Add(buttonsRow);
 
             btnOk.Click += (s, e) => CommitFields();
 
-            scrollPanel.Controls.Add(layout);
-            scrollPanel.Controls.Add(lblEffects);
-            scrollPanel.Controls.Add(effectsToolbar);
-            scrollPanel.Controls.Add(_listEffects);
-            scrollPanel.Controls.Add(_chkHasCondition);
-            scrollPanel.Controls.Add(_panelConditionHost);
-            scrollPanel.Controls.Add(btnOk);
-            scrollPanel.Controls.Add(btnCancel);
-
+            scrollPanel.Controls.Add(_rootFlow);
             Controls.Add(scrollPanel);
+
             AcceptButton = null; // evităm submit accidental din TextBox multiline
             CancelButton = btnCancel;
         }
+
+        // ------------------------------------------------------------------ //
+        //  Helpers de layout: un "rând" e mereu un FlowLayoutPanel orizontal
+        //  cu AutoSize=true, deci înălțimea lui reală e mereu cea corectă —
+        //  nu depinde de citirea unui .Bottom calculat prea devreme.
+        // ------------------------------------------------------------------ //
+
+        private Control MakeFieldRow(string labelText, Control input)
+        {
+            var row = new FlowLayoutPanel
+            {
+                AutoSize = true,
+                FlowDirection = FlowDirection.LeftToRight,
+                WrapContents = false,
+                Margin = new Padding(0, 0, 0, 8)
+            };
+
+            var lbl = new Label
+            {
+                Text = labelText,
+                ForeColor = Color.FromArgb(190, 175, 140),
+                Font = new Font("Segoe UI", 9.5f),
+                AutoSize = false,
+                Width = 130,
+                Anchor = AnchorStyles.Left,
+                TextAlign = ContentAlignment.TopLeft,
+                Margin = new Padding(0, 6, 8, 0)
+            };
+            input.Margin = new Padding(0);
+
+            row.Controls.Add(lbl);
+            row.Controls.Add(input);
+            return row;
+        }
+
+        private Control MakeSeparator()
+        {
+            return new Panel
+            {
+                Width = ContentWidth,
+                Height = 1,
+                BackColor = Color.FromArgb(60, 53, 38),
+                Margin = new Padding(0, 8, 0, 12)
+            };
+        }
+
+        // ------------------------------------------------------------------ //
+        //  Icon picker
+        // ------------------------------------------------------------------ //
 
         private Control BuildIconPicker()
         {
@@ -278,6 +357,10 @@ namespace StoryEngine.Editor
             }
         }
 
+        // ------------------------------------------------------------------ //
+        //  Condition editor host
+        // ------------------------------------------------------------------ //
+
         private void RebuildConditionEditor()
         {
             _panelConditionHost.Controls.Clear();
@@ -287,9 +370,13 @@ namespace StoryEngine.Editor
             {
                 _decision.Condition = newRoot;
             })
-            { Dock = DockStyle.Fill };
+            { Dock = DockStyle.Top, AutoSize = true };
             _panelConditionHost.Controls.Add(_conditionEditor);
         }
+
+        // ------------------------------------------------------------------ //
+        //  Commit + effects list refresh
+        // ------------------------------------------------------------------ //
 
         private void CommitFields()
         {
@@ -306,32 +393,16 @@ namespace StoryEngine.Editor
                 _listEffects.Items.Add(effect);
         }
 
-        // ── UI helpers ───────────────────────────────────────────────────
-
-        private void AddRow(TableLayoutPanel layout, string labelText, Control input)
-        {
-            var lbl = new Label
-            {
-                Text = labelText,
-                ForeColor = Color.FromArgb(190, 175, 140),
-                Font = new Font("Segoe UI", 9.5f),
-                AutoSize = true,
-                Anchor = AnchorStyles.Left,
-                Margin = new Padding(0, 8, 8, 8)
-            };
-            input.Margin = new Padding(0, 4, 0, 4);
-            layout.RowCount++;
-            int row = layout.RowCount - 1;
-            layout.Controls.Add(lbl, 0, row);
-            layout.Controls.Add(input, 1, row);
-        }
+        // ------------------------------------------------------------------ //
+        //  UI control factories
+        // ------------------------------------------------------------------ //
 
         private TextBox NewTextBox(string value, bool multiline = false, int height = 24)
         {
             return new TextBox
             {
                 Text = value ?? "",
-                Width = 350,
+                Width = ContentWidth - 138, // alocă spațiu corect lângă label-ul de 130px + margin
                 Multiline = multiline,
                 Height = multiline ? height : 24,
                 BackColor = Color.FromArgb(30, 26, 19),
@@ -346,7 +417,7 @@ namespace StoryEngine.Editor
         {
             var combo = new ComboBox
             {
-                Width = 350,
+                Width = ContentWidth - 138,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = Color.FromArgb(30, 26, 19),
                 ForeColor = Color.FromArgb(220, 205, 165),

@@ -16,6 +16,10 @@ namespace StoryEngine.Editor
         private System.Windows.Forms.ToolStripSeparator menuSep2;
         private System.Windows.Forms.ToolStripMenuItem menuExit;
 
+        // ── Tools menu (hartă expediție etc.) ─────────────────────────────────
+        private System.Windows.Forms.ToolStripMenuItem menuTools;
+        private System.Windows.Forms.ToolStripMenuItem menuMapEditor;
+
         // ── Root layout ──────────────────────────────────────────────────────
         private System.Windows.Forms.SplitContainer splitMain;     // left tree | right editor+log
         private System.Windows.Forms.SplitContainer splitRight;    // editor | validation log
@@ -26,6 +30,7 @@ namespace StoryEngine.Editor
         private System.Windows.Forms.ToolStripButton btnAddBlock;
         private System.Windows.Forms.ToolStripButton btnAddProperty;
         private System.Windows.Forms.ToolStripButton btnDeleteNode;
+        private System.Windows.Forms.ToolStripButton btnMapEditor;
         private System.Windows.Forms.ToolStripTextBox txtSearchBlocks;
         private System.Windows.Forms.TreeView treeStory;
 
@@ -52,35 +57,43 @@ namespace StoryEngine.Editor
             components = new System.ComponentModel.Container();
 
             // ── Theme colors used throughout ────────────────────────────────
-            var colBg        = System.Drawing.Color.FromArgb(18, 16, 12);
-            var colPanelBg   = System.Drawing.Color.FromArgb(24, 20, 14);
-            var colTreeBg    = System.Drawing.Color.FromArgb(22, 19, 14);
-            var colText      = System.Drawing.Color.FromArgb(210, 195, 160);
-            var colAccent    = System.Drawing.Color.FromArgb(220, 195, 120);
-            var colBorder    = System.Drawing.Color.FromArgb(70, 62, 42);
+            var colBg = System.Drawing.Color.FromArgb(18, 16, 12);
+            var colPanelBg = System.Drawing.Color.FromArgb(24, 20, 14);
+            var colTreeBg = System.Drawing.Color.FromArgb(22, 19, 14);
+            var colText = System.Drawing.Color.FromArgb(210, 195, 160);
+            var colAccent = System.Drawing.Color.FromArgb(220, 195, 120);
+            var colBorder = System.Drawing.Color.FromArgb(70, 62, 42);
 
             // ── Menu ─────────────────────────────────────────────────────────
-            menuStrip   = new System.Windows.Forms.MenuStrip();
-            menuFile    = new System.Windows.Forms.ToolStripMenuItem("Fișier");
-            menuNew     = new System.Windows.Forms.ToolStripMenuItem("Poveste nouă")  { ShortcutKeys = System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.N };
-            menuOpen    = new System.Windows.Forms.ToolStripMenuItem("Deschide...")    { ShortcutKeys = System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.O };
-            menuSave    = new System.Windows.Forms.ToolStripMenuItem("Salvează")       { ShortcutKeys = System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.S };
-            menuSaveAs  = new System.Windows.Forms.ToolStripMenuItem("Salvează ca...");
-            menuSep1    = new System.Windows.Forms.ToolStripSeparator();
+            menuStrip = new System.Windows.Forms.MenuStrip();
+            menuFile = new System.Windows.Forms.ToolStripMenuItem("Fișier");
+            menuNew = new System.Windows.Forms.ToolStripMenuItem("Poveste nouă") { ShortcutKeys = System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.N };
+            menuOpen = new System.Windows.Forms.ToolStripMenuItem("Deschide...") { ShortcutKeys = System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.O };
+            menuSave = new System.Windows.Forms.ToolStripMenuItem("Salvează") { ShortcutKeys = System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.S };
+            menuSaveAs = new System.Windows.Forms.ToolStripMenuItem("Salvează ca...");
+            menuSep1 = new System.Windows.Forms.ToolStripSeparator();
             menuValidate = new System.Windows.Forms.ToolStripMenuItem("Validează povestea") { ShortcutKeys = System.Windows.Forms.Keys.F6 };
-            menuSep2    = new System.Windows.Forms.ToolStripSeparator();
-            menuExit    = new System.Windows.Forms.ToolStripMenuItem("Ieșire");
+            menuSep2 = new System.Windows.Forms.ToolStripSeparator();
+            menuExit = new System.Windows.Forms.ToolStripMenuItem("Ieșire");
 
-            menuNew.Click      += menuNew_Click;
-            menuOpen.Click     += menuOpen_Click;
-            menuSave.Click     += menuSave_Click;
-            menuSaveAs.Click   += menuSaveAs_Click;
+            menuNew.Click += menuNew_Click;
+            menuOpen.Click += menuOpen_Click;
+            menuSave.Click += menuSave_Click;
+            menuSaveAs.Click += menuSaveAs_Click;
             menuValidate.Click += menuValidate_Click;
-            menuExit.Click     += (s, e) => Close();
+            menuExit.Click += (s, e) => Close();
 
             menuFile.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[]
                 { menuNew, menuOpen, menuSave, menuSaveAs, menuSep1, menuValidate, menuSep2, menuExit });
             menuStrip.Items.Add(menuFile);
+
+            // ── Meniu Tools (Hartă expediție) ────────────────────────────────
+            menuTools = new System.Windows.Forms.ToolStripMenuItem("Unelte");
+            menuMapEditor = new System.Windows.Forms.ToolStripMenuItem("Hartă expediție...") { ShortcutKeys = System.Windows.Forms.Keys.F7 };
+            menuMapEditor.Click += (s, e) => ShowMapEditor();
+            menuTools.DropDownItems.Add(menuMapEditor);
+            menuStrip.Items.Add(menuTools);
+
             menuStrip.BackColor = colPanelBg;
             menuStrip.ForeColor = colText;
             menuStrip.Renderer = new EditorDarkRenderer();
@@ -116,12 +129,14 @@ namespace StoryEngine.Editor
                 GripStyle = System.Windows.Forms.ToolStripGripStyle.Hidden,
                 Renderer = new EditorDarkRenderer()
             };
-            btnAddBlock    = new System.Windows.Forms.ToolStripButton("+ Bloc")    { ForeColor = colText };
+            btnAddBlock = new System.Windows.Forms.ToolStripButton("+ Bloc") { ForeColor = colText };
             btnAddProperty = new System.Windows.Forms.ToolStripButton("+ Proprietate") { ForeColor = colText };
-            btnDeleteNode  = new System.Windows.Forms.ToolStripButton("✕ Șterge")  { ForeColor = colText };
-            btnAddBlock.Click    += btnAddBlock_Click;
+            btnDeleteNode = new System.Windows.Forms.ToolStripButton("✕ Șterge") { ForeColor = colText };
+            btnMapEditor = new System.Windows.Forms.ToolStripButton("🗺 Hartă expediție") { ForeColor = colText };
+            btnAddBlock.Click += btnAddBlock_Click;
             btnAddProperty.Click += btnAddProperty_Click;
-            btnDeleteNode.Click  += btnDeleteNode_Click;
+            btnDeleteNode.Click += btnDeleteNode_Click;
+            btnMapEditor.Click += (s, e) => ShowMapEditor();
 
             var lblSearch = new System.Windows.Forms.ToolStripLabel("  Caută bloc:") { ForeColor = colText };
             txtSearchBlocks = new System.Windows.Forms.ToolStripTextBox { Size = new System.Drawing.Size(140, 25) };
@@ -129,6 +144,7 @@ namespace StoryEngine.Editor
 
             toolStripTree.Items.AddRange(new System.Windows.Forms.ToolStripItem[]
                 { btnAddBlock, btnAddProperty, new System.Windows.Forms.ToolStripSeparator(), btnDeleteNode,
+                  new System.Windows.Forms.ToolStripSeparator(), btnMapEditor,
                   new System.Windows.Forms.ToolStripSeparator(), lblSearch, txtSearchBlocks });
 
             treeStory = new System.Windows.Forms.TreeView
@@ -236,11 +252,11 @@ namespace StoryEngine.Editor
     // ── Dark renderer shared by MenuStrip and ToolStrip ─────────────────────
     internal class EditorDarkRenderer : System.Windows.Forms.ToolStripProfessionalRenderer
     {
-        private static readonly System.Drawing.Color BgNormal      = System.Drawing.Color.FromArgb(28, 24, 18);
-        private static readonly System.Drawing.Color BgHover       = System.Drawing.Color.FromArgb(65, 55, 35);
-        private static readonly System.Drawing.Color BgDropdown    = System.Drawing.Color.FromArgb(32, 28, 20);
-        private static readonly System.Drawing.Color TextNormal    = System.Drawing.Color.FromArgb(210, 195, 150);
-        private static readonly System.Drawing.Color TextDisabled  = System.Drawing.Color.FromArgb(100, 90, 65);
+        private static readonly System.Drawing.Color BgNormal = System.Drawing.Color.FromArgb(28, 24, 18);
+        private static readonly System.Drawing.Color BgHover = System.Drawing.Color.FromArgb(65, 55, 35);
+        private static readonly System.Drawing.Color BgDropdown = System.Drawing.Color.FromArgb(32, 28, 20);
+        private static readonly System.Drawing.Color TextNormal = System.Drawing.Color.FromArgb(210, 195, 150);
+        private static readonly System.Drawing.Color TextDisabled = System.Drawing.Color.FromArgb(100, 90, 65);
         private static readonly System.Drawing.Color SeparatorColor = System.Drawing.Color.FromArgb(70, 62, 42);
 
         protected override void OnRenderToolStripBackground(System.Windows.Forms.ToolStripRenderEventArgs e)

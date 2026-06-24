@@ -27,8 +27,8 @@ namespace StoryEngine.Player
             _zipPath = zipPath;
 
             Text = "Hartă expediție";
-            Width = 900;
-            Height = 650;
+            Width = 1370;
+            Height = 800;
             StartPosition = FormStartPosition.CenterParent;
             BackColor = Color.FromArgb(18, 16, 12);
             ForeColor = Color.FromArgb(220, 200, 150);

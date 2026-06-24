@@ -101,6 +101,10 @@ namespace StoryEngine.Engine
                 .Where(b => !string.IsNullOrWhiteSpace(b.Id))
                 .Select(b => b.Id));
 
+            var eventCategories = new HashSet<string>(story.Blocks
+                .Where(b => !string.IsNullOrWhiteSpace(b.EventCategory))
+                .Select(b => b.EventCategory));
+
             var propertyKeys = new HashSet<string>();
 
             if (story.Properties != null)
@@ -142,7 +146,7 @@ namespace StoryEngine.Engine
                     result.Warnings.Add($"Block '{block.Id}' has no decisions and is not Final. Players will be stuck.");
 
                 foreach (var decision in block.Decisions)
-                    ValidateDecision(decision, block.Id, blockIds, propertyKeys, result);
+                    ValidateDecision(decision, block.Id, blockIds, eventCategories, propertyKeys, result);
             }
 
             if (story.Properties != null)
@@ -159,7 +163,8 @@ namespace StoryEngine.Engine
         }
 
         private void ValidateDecision(DecisionDefinition decision, string blockId,
-            HashSet<string> blockIds, HashSet<string> propertyKeys, ValidationResult result)
+        HashSet<string> blockIds, HashSet<string> eventCategories,
+        HashSet<string> propertyKeys, ValidationResult result)
         {
             if (decision == null)
             {
@@ -167,13 +172,27 @@ namespace StoryEngine.Engine
                 return;
             }
 
-            if (string.IsNullOrWhiteSpace(decision.Text))
-                result.Errors.Add($"Block '{blockId}': A decision is missing its Text.");
-
             if (string.IsNullOrWhiteSpace(decision.TargetBlock))
+            {
                 result.Errors.Add($"Block '{blockId}': Decision '{decision.Text}' has no TargetBlock.");
+            }
+            else if (decision.TargetBlock.StartsWith("random:"))
+            {
+                string category = decision.TargetBlock.Substring("random:".Length);
+
+                if (string.IsNullOrWhiteSpace(category))
+                {
+                    result.Errors.Add($"Block '{blockId}': Decision '{decision.Text}' has invalid random target '{decision.TargetBlock}'.");
+                }
+                else if (!eventCategories.Contains(category))
+                {
+                    result.Errors.Add($"Block '{blockId}': Decision '{decision.Text}' targets unknown random category '{category}'.");
+                }
+            }
             else if (!blockIds.Contains(decision.TargetBlock))
+            {
                 result.Errors.Add($"Block '{blockId}': Decision '{decision.Text}' targets unknown block '{decision.TargetBlock}'.");
+            }
 
             if (!string.IsNullOrEmpty(decision.Icon) && !IsValidImageExtension(decision.Icon))
                 result.Warnings.Add($"Block '{blockId}', Decision '{decision.Text}': Icon '{decision.Icon}' does not have a supported image extension.");

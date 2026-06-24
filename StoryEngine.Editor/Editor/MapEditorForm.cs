@@ -27,8 +27,8 @@ namespace StoryEngine.Editor
             _workspaceDir = workspaceDir;
 
             Text = "Editor hartă expediție";
-            Width = 1050;
-            Height = 700;
+            Width = 1720;
+            Height = 800;
             StartPosition = FormStartPosition.CenterParent;
             BackColor = Color.FromArgb(18, 16, 12);
             ForeColor = Color.FromArgb(220, 205, 165);

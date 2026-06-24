@@ -156,7 +156,7 @@ namespace StoryEngine.Player
 
         private void RefreshStoryText(StoryBlock block)
         {
-            lblDayCounter.Text = $"Ziua {_engine.State.Day}";
+            lblDayCounter.Text = GetLocationName(block);
 
             string prefix = "";
 
@@ -379,7 +379,7 @@ private void RefreshDecisions(StoryBlock block)
                     lblTitle.Text = _story?.Title ?? "";
                     break;
                 case UiState.GameOver:
-                    lblDayCounter.Text = $"Ziua {_engine.State.Day} — FINAL";
+                    lblDayCounter.Text = GetLocationName(_engine.GetCurrentBlock()) + " — FINAL";
                     break;
             }
         }
@@ -401,7 +401,122 @@ private void RefreshDecisions(StoryBlock block)
             t.Tick += (s, e) => { Text = "Story Player"; t.Dispose(); };
             t.Start();
         }
+        private string GetLocationName(StoryBlock block)
+        {
+            if (block == null || string.IsNullOrWhiteSpace(block.Id))
+                return "Loc necunoscut";
 
+            string id = block.Id;
+            string category = block.EventCategory ?? "";
+
+            if (id == "hub.main")
+                return "Buncărul familiei";
+
+            if (id == "hub.workshop")
+                return "Atelierul improvizat";
+
+            if (id == "hub.infirmary")
+                return "Infirmeria";
+
+            if (id == "hub.radio")
+                return "Camera radio";
+
+            if (id == "hub.trader")
+                return "Ușa de schimb";
+
+            if (id == "random.deck")
+                return "Pachetul roșu";
+
+            if (category == "RandomDeck" || id.StartsWith("random.card"))
+                return "Card roșu";
+
+            if (category == "scout.bula" || id.StartsWith("scout.bula"))
+                return "Expediția lui Bulă";
+
+            if (category == "scout.mara" || id.StartsWith("scout.mara"))
+                return "Expediția Marei";
+
+            if (category == "scout.vlad" || id.StartsWith("scout.vlad"))
+                return "Expediția lui Vlad";
+
+            if (category == "scout.irina" || id.StartsWith("scout.irina"))
+                return "Expediția Irinei";
+
+            if (category == "exp.school" || id.StartsWith("exp.school"))
+                return "Școala prăbușită";
+
+            if (category == "exp.market" || id.StartsWith("exp.market"))
+                return "Piața ruinată";
+
+            if (category == "exp.forest" || id.StartsWith("exp.forest"))
+                return "Pădurea mutantă";
+
+            if (category == "exp.radio" || id.StartsWith("exp.radio"))
+                return "Turn radio";
+
+            if (category == "exp.military" || id.StartsWith("exp.military"))
+                return "Zona militară";
+
+            if (category == "exp.tunnel" || id.StartsWith("exp.tunnel"))
+                return "Tunelul vechi";
+
+            if (category == "exp.pharmacy" || id.StartsWith("exp.pharmacy"))
+                return "Farmacia contaminată";
+
+            if (category == "exp.waterplant" || id.StartsWith("exp.waterplant"))
+                return "Stația de apă";
+
+            if (category == "exp.lab" || id.StartsWith("exp.lab"))
+                return "Laboratorul subteran";
+
+            if (category == "exp.power" || id.StartsWith("exp.power"))
+                return "Substația solară";
+
+            if (category == "exp.greenhouse" || id.StartsWith("exp.greenhouse"))
+                return "Sera municipală";
+
+            if (category == "exp.evac" || id.StartsWith("exp.evac"))
+                return "Platforma de evacuare";
+
+            if (category == "shelter.horror" || id.StartsWith("shelter.horror"))
+                return "Buncărul — ceva nu e în regulă";
+
+            if (category == "shelter.cache" || id.StartsWith("shelter.cache"))
+                return "Depozitul ascuns";
+
+            if (category == "radio.reply" || id.StartsWith("radio.reply"))
+                return "Frecvența necunoscută";
+
+            if (category == "drone.feed" || id.StartsWith("drone.feed"))
+                return "Fluxul dronei";
+
+            if (category == "Crisis" || id.StartsWith("crisis."))
+                return "Criză în buncăr";
+
+            if (id.StartsWith("ending."))
+                return "Final";
+
+            return MakeReadableLocation(id);
+        }
+
+        private string MakeReadableLocation(string id)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+                return "Loc necunoscut";
+
+            string text = id.Replace(".", " ").Replace("_", " ").Replace("-", " ");
+            string[] words = text.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+
+            for (int i = 0; i < words.Length; i++)
+            {
+                if (words[i].Length == 0)
+                    continue;
+
+                words[i] = char.ToUpper(words[i][0]) + words[i].Substring(1);
+            }
+
+            return string.Join(" ", words);
+        }
         private string GetSavedProgressPath()
         {
             string folder = Path.Combine(
