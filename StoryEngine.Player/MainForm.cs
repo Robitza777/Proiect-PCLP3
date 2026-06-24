@@ -196,56 +196,121 @@ namespace StoryEngine.Player
             panelHud.Controls.Clear();
             _hudBars.Clear();
 
+            panelHud.Padding = new Padding(12, 6, 12, 6);
+            panelHud.AutoScroll = false;
+
+            var hudLayout = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 1,
+                RowCount = 2,
+                BackColor = Color.Transparent,
+                Margin = new Padding(0),
+                Padding = new Padding(0)
+            };
+
+            hudLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            hudLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
+            hudLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
+
+            var rowResources = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.LeftToRight,
+                WrapContents = false,
+                AutoScroll = true,
+                BackColor = Color.Transparent,
+                Margin = new Padding(0),
+                Padding = new Padding(0)
+            };
+
+            var rowCharacters = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.LeftToRight,
+                WrapContents = false,
+                AutoScroll = true,
+                BackColor = Color.Transparent,
+                Margin = new Padding(0),
+                Padding = new Padding(0)
+            };
+
             foreach (var prop in _story.Properties)
             {
-                if (!prop.ShowInHud) continue;
+                if (!prop.ShowInHud)
+                    continue;
+
                 var bar = new HudBar(prop, _repo, _currentZipPath);
                 _hudBars.Add(bar);
-                panelHud.Controls.Add(bar.Panel);
+
+                if (IsCharacterProperty(prop))
+                    rowCharacters.Controls.Add(bar.Panel);
+                else
+                    rowResources.Controls.Add(bar.Panel);
+            }
+
+            hudLayout.Controls.Add(rowResources, 0, 0);
+            hudLayout.Controls.Add(rowCharacters, 0, 1);
+
+            panelHud.Controls.Add(hudLayout);
+        }
+        private bool IsCharacterProperty(StatePropertyDefinition prop)
+        {
+            string key = (prop.Key ?? "").ToLowerInvariant();
+            string name = (prop.DisplayName ?? "").ToLowerInvariant();
+
+            return key.Contains("bula")
+                || key.Contains("bulă")
+                || key.Contains("mara")
+                || key.Contains("vlad")
+                || key.Contains("irina")
+                || name.Contains("bula")
+                || name.Contains("bulă")
+                || name.Contains("mara")
+                || name.Contains("vlad")
+                || name.Contains("irina");
+        }
+        // ── Decision buttons ──────────────────────────────────────────────
+        private void RefreshDecisions(StoryBlock block)
+        {
+            foreach (Control c in flowDecisions.Controls)
+                if (c is Button b)
+                {
+                    Image oldImg = b.Image;
+                    b.Image = null;
+                    oldImg?.Dispose();
+                }
+
+            flowDecisions.Controls.Clear();
+
+            if (block.IsFinal)
+            {
+                ShowGameOver(block);
+                return;
+            }
+
+            var visibleDecisions = _engine.GetVisibleDecisionsForCurrentBlock();
+
+            if (visibleDecisions.Count == 0)
+            {
+                flowDecisions.Controls.Add(new Label
+                {
+                    Text = "Nu există acțiuni disponibile.",
+                    ForeColor = Color.FromArgb(180, 180, 160),
+                    AutoSize = true,
+                    Padding = new Padding(8)
+                });
+                return;
+            }
+
+            foreach (var decision in visibleDecisions)
+            {
+                bool available = decision.Condition == null
+                    || _engine.EvaluateCondition(decision.Condition);
+
+                flowDecisions.Controls.Add(CreateDecisionButton(decision, available));
             }
         }
-
-        // ── Decision buttons ──────────────────────────────────────────────
-private void RefreshDecisions(StoryBlock block)
-{
-    foreach (Control c in flowDecisions.Controls)
-        if (c is Button b)
-        {
-            Image oldImg = b.Image;
-            b.Image = null;
-            oldImg?.Dispose();
-        }
-
-    flowDecisions.Controls.Clear();
-
-    if (block.IsFinal)
-    {
-        ShowGameOver(block);
-        return;
-    }
-
-    var visibleDecisions = _engine.GetVisibleDecisionsForCurrentBlock();
-
-    if (visibleDecisions.Count == 0)
-    {
-        flowDecisions.Controls.Add(new Label
-        {
-            Text = "Nu există acțiuni disponibile.",
-            ForeColor = Color.FromArgb(180, 180, 160),
-            AutoSize = true,
-            Padding = new Padding(8)
-        });
-        return;
-    }
-
-    foreach (var decision in visibleDecisions)
-    {
-        bool available = decision.Condition == null
-            || _engine.EvaluateCondition(decision.Condition);
-
-        flowDecisions.Controls.Add(CreateDecisionButton(decision, available));
-    }
-}
         private Button CreateDecisionButton(DecisionDefinition decision, bool enabled)
         {
             int btnWidth = flowDecisions.ClientSize.Width > 20

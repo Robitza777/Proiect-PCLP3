@@ -22,9 +22,9 @@
         private System.Windows.Forms.Label lblTitle;
 
         // Row 1 – HUD strip
-        private System.Windows.Forms.FlowLayoutPanel panelHud;
+        private System.Windows.Forms.Panel panelHud;
 
-        // Row 2 – main content (background + text overlay)
+        // Row 2 – main content
         private System.Windows.Forms.Panel panelContent;
         private System.Windows.Forms.Panel panelTextOverlay;
         private System.Windows.Forms.PictureBox picBackground;
@@ -34,10 +34,10 @@
         // Row 3 – decision buttons
         private System.Windows.Forms.FlowLayoutPanel flowDecisions;
 
-        // Inventory button (top-right of title row)
+        // Inventory button
         private System.Windows.Forms.Button btnInventory;
 
-        // Toggle button: arată text-rezultat vs sumar de efecte
+        // Toggle button
         private System.Windows.Forms.Button btnShowEffects;
         private bool _showEffectsActive = false;
 
@@ -69,13 +69,22 @@
             menuExit.Click += menuExit_Click;
 
             menuItemStory.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[]
-                { menuOpen, menuRestart, menuSep1, menuSave, menuLoad, menuSep2, menuExit });
+            {
+                menuOpen,
+                menuRestart,
+                menuSep1,
+                menuSave,
+                menuLoad,
+                menuSep2,
+                menuExit
+            });
+
             menuStrip.Items.Add(menuItemStory);
             menuStrip.BackColor = System.Drawing.Color.FromArgb(28, 24, 18);
             menuStrip.ForeColor = System.Drawing.Color.FromArgb(200, 185, 140);
             menuStrip.Renderer = new DarkMenuRenderer();
 
-            // ── Root layout (4 rows) ───────────────────────────────────────
+            // ── Root layout ────────────────────────────────────────────────
             layoutRoot = new System.Windows.Forms.TableLayoutPanel
             {
                 Dock = System.Windows.Forms.DockStyle.Fill,
@@ -84,11 +93,13 @@
                 Padding = new System.Windows.Forms.Padding(0),
                 BackColor = System.Drawing.Color.FromArgb(18, 16, 12)
             };
+
             layoutRoot.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100));
-            layoutRoot.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 52));   // title
-            layoutRoot.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 64));   // HUD
-            layoutRoot.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100));   // content
-            layoutRoot.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 180));  // decisions
+
+            layoutRoot.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 52));    // title
+            layoutRoot.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 130));   // HUD pe doua randuri
+            layoutRoot.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100));    // content
+            layoutRoot.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 180));   // decisions
 
             // ── Row 0: Title ───────────────────────────────────────────────
             panelTitle = new System.Windows.Forms.Panel
@@ -152,27 +163,27 @@
                 btnInventory.Location = new System.Drawing.Point(
                     panelTitle.ClientSize.Width - btnInventory.Width - 10,
                     (panelTitle.ClientSize.Height - btnInventory.Height) / 2);
+
                 btnInventory.BringToFront();
 
                 btnShowEffects.Location = new System.Drawing.Point(
                     btnInventory.Left - btnShowEffects.Width - 8,
                     (panelTitle.ClientSize.Height - btnShowEffects.Height) / 2);
+
                 btnShowEffects.BringToFront();
             };
 
             // ── Row 1: HUD ─────────────────────────────────────────────────
-            panelHud = new System.Windows.Forms.FlowLayoutPanel
+            panelHud = new System.Windows.Forms.Panel
             {
                 Dock = System.Windows.Forms.DockStyle.Fill,
-                FlowDirection = System.Windows.Forms.FlowDirection.LeftToRight,
-                WrapContents = false,
-                AutoScroll = false,
                 BackColor = System.Drawing.Color.FromArgb(28, 24, 18),
-                Padding = new System.Windows.Forms.Padding(12, 8, 12, 8)
+                Padding = new System.Windows.Forms.Padding(12, 6, 12, 6)
             };
-            // HUD bars are added dynamically in RefreshHud()
 
-            // ── Row 2: Content (background + text overlay) ─────────────────
+            // HUD bars are added dynamically in MainForm.cs / BuildHudBars()
+
+            // ── Row 2: Content ─────────────────────────────────────────────
             panelContent = new System.Windows.Forms.Panel
             {
                 Dock = System.Windows.Forms.DockStyle.Fill,
@@ -186,13 +197,10 @@
                 BackColor = System.Drawing.Color.Transparent
             };
 
-            // Text overlay panel — fills the content area.
-            // When a background image is present it sits on top of PictureBox (z-order).
-            // BackColor uses alpha for the semi-transparent effect over images.
             panelTextOverlay = new System.Windows.Forms.Panel
             {
                 Dock = System.Windows.Forms.DockStyle.Fill,
-                BackColor = System.Drawing.Color.FromArgb(18, 16, 12), // opaque when no image
+                BackColor = System.Drawing.Color.FromArgb(18, 16, 12),
                 Padding = new System.Windows.Forms.Padding(16, 8, 16, 8)
             };
 
@@ -221,8 +229,9 @@
 
             panelTextOverlay.Controls.Add(txtStoryText);
             panelTextOverlay.Controls.Add(lblDayCounter);
+
             panelContent.Controls.Add(panelTextOverlay);
-            panelContent.Controls.Add(picBackground);  // added last = lowest z-order
+            panelContent.Controls.Add(picBackground);
 
             // ── Row 3: Decisions ───────────────────────────────────────────
             flowDecisions = new System.Windows.Forms.FlowLayoutPanel
@@ -242,14 +251,17 @@
             layoutRoot.Controls.Add(flowDecisions, 0, 3);
 
             this.SuspendLayout();
+
             this.Controls.Add(layoutRoot);
-            this.Controls.Add(menuStrip);   // MenuStrip must be added after TableLayout
+            this.Controls.Add(menuStrip);
+
             this.MainMenuStrip = menuStrip;
             this.Text = "Story Player";
-            this.Size = new System.Drawing.Size(900, 700);
-            this.MinimumSize = new System.Drawing.Size(640, 520);
+            this.Size = new System.Drawing.Size(900, 790);
+            this.MinimumSize = new System.Drawing.Size(640, 650);
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.BackColor = System.Drawing.Color.FromArgb(18, 16, 12);
+
             this.ResumeLayout(false);
             this.PerformLayout();
         }
@@ -265,21 +277,18 @@
         private static readonly System.Drawing.Color TextDisabled = System.Drawing.Color.FromArgb(100, 90, 67);
         private static readonly System.Drawing.Color SeparatorColor = System.Drawing.Color.FromArgb(70, 62, 42);
 
-        // Bara de sus (MenuStrip)
         protected override void OnRenderToolStripBackground(System.Windows.Forms.ToolStripRenderEventArgs e)
         {
             using var brush = new System.Drawing.SolidBrush(BgNormal);
             e.Graphics.FillRectangle(brush, e.AffectedBounds);
         }
 
-        // Fundalul dropdown-ului deschis
         protected override void OnRenderImageMargin(System.Windows.Forms.ToolStripRenderEventArgs e)
         {
             using var brush = new System.Drawing.SolidBrush(BgDropdown);
             e.Graphics.FillRectangle(brush, e.AffectedBounds);
         }
 
-        // Fundalul fiecărui item
         protected override void OnRenderMenuItemBackground(System.Windows.Forms.ToolStripItemRenderEventArgs e)
         {
             var color = e.Item.Selected ? BgHover : BgDropdown;
@@ -287,14 +296,12 @@
             e.Graphics.FillRectangle(brush, new System.Drawing.Rectangle(System.Drawing.Point.Empty, e.Item.Size));
         }
 
-        // Textul item-urilor
         protected override void OnRenderItemText(System.Windows.Forms.ToolStripItemTextRenderEventArgs e)
         {
             e.TextColor = e.Item.Enabled ? TextNormal : TextDisabled;
             base.OnRenderItemText(e);
         }
 
-        // Separatori
         protected override void OnRenderSeparator(System.Windows.Forms.ToolStripSeparatorRenderEventArgs e)
         {
             int y = e.Item.Height / 2;
@@ -302,7 +309,6 @@
             e.Graphics.DrawLine(pen, 4, y, e.Item.Width - 4, y);
         }
 
-        // Elimină border-ul implicit alb/gri din jurul dropdown-ului
         protected override void OnRenderToolStripBorder(System.Windows.Forms.ToolStripRenderEventArgs e)
         {
             using var pen = new System.Drawing.Pen(SeparatorColor);
