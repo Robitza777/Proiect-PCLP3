@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
+using System.Security.Cryptography;
+using System.Text;
 using System.Windows.Forms;
 using StoryEngine.Engine;
 using StoryEngine.Models;
@@ -38,15 +40,19 @@ namespace StoryEngine.Player
         {
             using var dlg = new OpenFileDialog { Title = "Deschide poveste", Filter = "Story files (*.zip)|*.zip" };
             if (dlg.ShowDialog() != DialogResult.OK) return;
+
             try
             {
                 _currentZipPath = dlg.FileName;
                 _story = _repo.LoadStory(_currentZipPath);
                 _engine = new GameEngine(_story);
-                _engine.StartNewGame();
-                _hudBars.Clear();   // forțează rebuild HUD la noua poveste
+
+                if (!TryLoadSavedProgress())
+                    _engine.StartNewGame();
+
+                _hudBars.Clear();
                 RefreshAll();
-                SetUiState(UiState.Playing);
+                SetUiState(_engine.State.IsGameOver ? UiState.GameOver : UiState.Playing);
             }
             catch (Exception ex)
             {
@@ -58,11 +64,15 @@ namespace StoryEngine.Player
         private void menuRestart_Click(object sender, EventArgs e)
         {
             if (_engine == null) return;
-            if (MessageBox.Show("Reîncepi jocul? Progresul curent se va pierde.",
+
+            if (MessageBox.Show("Reîncepi jocul? Progresul salvat se va pierde.",
                     "Restart", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
                 return;
+
+            DeleteSavedProgress();
+
             _engine.StartNewGame();
-            _hudBars.Clear();   // forțează rebuild ca iconițele să fie re-încărcate
+            _hudBars.Clear();
             RefreshAll();
             SetUiState(UiState.Playing);
         }
@@ -143,7 +153,7 @@ namespace StoryEngine.Player
             string prefix = "";
 
             if (_showEffectsActive)
-            { 
+            {
                 if (!string.IsNullOrEmpty(_engine.State.LastEffectsSummary))
                     prefix = _engine.State.LastEffectsSummary;
                 else if (!string.IsNullOrEmpty(_engine.State.LastResultText))
@@ -151,7 +161,6 @@ namespace StoryEngine.Player
             }
             else
             {
-                // Mod normal: textul narativ scris de autor
                 if (!string.IsNullOrEmpty(_engine.State.LastResultText))
                     prefix = _engine.State.LastResultText;
             }
@@ -264,18 +273,17 @@ namespace StoryEngine.Player
             }
             btn.FlatAppearance.BorderSize = 1;
 
-            // Iconița item (LoadImageFromZip — fără file lock)
             var icon = TryGetDecisionItemIcon(decision);
             if (icon != null)
             {
-                    Image displayIcon = enabled ? icon : ImageEffects.ToGrayscale(icon);
+                Image displayIcon = enabled ? icon : ImageEffects.ToGrayscale(icon);
 
-                    btn.Image = new Bitmap(displayIcon, new Size(24, 24));
-                    btn.ImageAlign = ContentAlignment.MiddleLeft;
-                    btn.TextImageRelation = TextImageRelation.ImageBeforeText;
-                    btn.Padding = new Padding(4, 0, 0, 0);
-                
-                icon.Dispose();  // original eliberat; btn.Image are propria copie
+                btn.Image = new Bitmap(displayIcon, new Size(24, 24));
+                btn.ImageAlign = ContentAlignment.MiddleLeft;
+                btn.TextImageRelation = TextImageRelation.ImageBeforeText;
+                btn.Padding = new Padding(4, 0, 0, 0);
+
+                icon.Dispose();
             }
 
             return btn;
@@ -299,7 +307,6 @@ namespace StoryEngine.Player
 
             var propDef = _story.Properties.Find(p => p.Key == decision.Condition.Property);
 
-            // HudIcon explicit, altfel derivat: "item.lantern" → "lantern.png"
             string iconFile = !string.IsNullOrEmpty(propDef?.HudIcon)
                 ? propDef.HudIcon
                 : decision.Condition.Property.Substring("item.".Length) + ".png";
@@ -379,6 +386,131 @@ namespace StoryEngine.Player
             var t = new System.Windows.Forms.Timer { Interval = 2000 };
             t.Tick += (s, e) => { Text = "Story Player"; t.Dispose(); };
             t.Start();
+        }
+
+        private string GetSavedProgressPath()
+        {
+            string folder = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "StoryEnginePlayer",
+                "Saves"
+            );
+
+            Directory.CreateDirectory(folder);
+
+            string normalizedPath = _currentZipPath.ToLowerInvariant();
+            byte[] hashBytes = SHA256.HashData(Encoding.UTF8.GetBytes(normalizedPath));
+            string hash = Convert.ToHexString(hashBytes);
+
+            return Path.Combine(folder, hash + ".progress.json");
+        }
+
+        private void SaveCurrentProgress()
+        {
+            if (_engine == null || _story == null || string.IsNullOrEmpty(_currentZipPath))
+                return;
+
+            string savePath = GetSavedProgressPath();
+            _repo.SaveGameState(_engine.State, savePath);
+        }
+
+        private bool TryLoadSavedProgress()
+        {
+            string savePath = GetSavedProgressPath();
+
+            if (!File.Exists(savePath))
+                return false;
+
+            DialogResult result = MessageBox.Show(
+                "Am găsit un progres salvat pentru această poveste. Vrei să continui de unde ai rămas?",
+                "Continuă jocul",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question
+            );
+
+            if (result != DialogResult.Yes)
+                return false;
+
+            try
+            {
+                GameState savedState = _repo.LoadGameState(savePath);
+                _engine.LoadGame(savedState);
+                return true;
+            }
+            catch
+            {
+                MessageBox.Show(
+                    "Salvarea nu a putut fi încărcată. Jocul va începe de la început.",
+                    "Salvare invalidă",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning
+                );
+
+                return false;
+            }
+        }
+
+        private void DeleteSavedProgress()
+        {
+            if (string.IsNullOrEmpty(_currentZipPath))
+                return;
+
+            string savePath = GetSavedProgressPath();
+
+            if (File.Exists(savePath))
+                File.Delete(savePath);
+        }
+
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            if (_engine != null && _story != null && !string.IsNullOrEmpty(_currentZipPath))
+            {
+                DialogResult result = MessageBox.Show(
+                    "Vrei să salvezi progresul înainte să ieși?",
+                    "Salvare progres",
+                    MessageBoxButtons.YesNoCancel,
+                    MessageBoxIcon.Question
+                );
+
+                if (result == DialogResult.Cancel)
+                {
+                    e.Cancel = true;
+                    return;
+                }
+
+                if (result == DialogResult.Yes)
+                {
+                    try
+                    {
+                        SaveCurrentProgress();
+                    }
+                    catch
+                    {
+                        MessageBox.Show(
+                            "Progresul nu a putut fi salvat.",
+                            "Eroare salvare",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Error
+                        );
+
+                        e.Cancel = true;
+                        return;
+                    }
+                }
+
+                if (result == DialogResult.No)
+                {
+                    try
+                    {
+                        DeleteSavedProgress();
+                    }
+                    catch
+                    {
+                    }
+                }
+            }
+
+            base.OnFormClosing(e);
         }
 
         private void ApplyTheme()
