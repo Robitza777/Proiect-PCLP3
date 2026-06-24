@@ -27,5 +27,8 @@ namespace StoryEngine.Models
         /// Null means the block is a fixed narrative node, not part of any random pool.
         /// </summary>
         public string EventCategory { get; set; }
+        public string DecisionPoolCategory { get; set; }
+
+        public int RandomDecisionCount { get; set; } = 0;
     }
 }

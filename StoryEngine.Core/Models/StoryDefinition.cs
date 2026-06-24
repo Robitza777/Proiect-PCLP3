@@ -14,6 +14,12 @@ namespace StoryEngine.Models
         /// <summary>Id of the block where the game starts</summary>
         public string StartBlock { get; set; }
 
+        /// <summary>Optional background image for the expedition map, stored in the ZIP.</summary>
+        public string MapBackground { get; set; }
+
+        /// <summary>Clickable locations displayed on the expedition map.</summary>
+        public List<MapLocationDefinition> MapLocations { get; set; } = new List<MapLocationDefinition>();
+
         /// <summary>All tracked state properties (food, water, health, morale, ...)</summary>
         public List<StatePropertyDefinition> Properties { get; set; } = new List<StatePropertyDefinition>();
 

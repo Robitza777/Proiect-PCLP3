@@ -152,6 +152,8 @@ namespace StoryEngine.Editor
                 FlatStyle = FlatStyle.Flat,
                 Margin = new Padding(0, 0, 6, 0)
             };
+            cmbProperty.Items.Add("day");
+
             foreach (var prop in _story.Properties)
                 cmbProperty.Items.Add(prop.Key);
             if (cmbProperty.Items.Contains(_condition.Property))

@@ -18,12 +18,20 @@ namespace StoryEngine.Player
         private readonly StoryRepository _repo = new StoryRepository();
         private string _currentZipPath;
 
-        public MainForm()
+       public MainForm()
         {
             InitializeComponent();
             ApplyTheme();
             SetUiState(UiState.NoStory);
             flowDecisions.SizeChanged += (s, e) => ResizeDecisionButtons();
+
+            var menuJournal = new ToolStripMenuItem("Jurnal aventură");
+            menuJournal.Click += (s, e) => ShowJournal();
+            menuItemStory.DropDownItems.Insert(5, menuJournal);
+
+            var menuMap = new ToolStripMenuItem("Hartă expediție");
+            menuMap.Click += (s, e) => ShowMap();
+            menuItemStory.DropDownItems.Insert(6, menuMap);
         }
 
         private void ResizeDecisionButtons()
@@ -198,40 +206,46 @@ namespace StoryEngine.Player
         }
 
         // ── Decision buttons ──────────────────────────────────────────────
-
-        private void RefreshDecisions(StoryBlock block)
+private void RefreshDecisions(StoryBlock block)
+{
+    foreach (Control c in flowDecisions.Controls)
+        if (c is Button b)
         {
-            foreach (Control c in flowDecisions.Controls)
-                if (c is Button b)
-                {
-                    Image oldImg = b.Image;
-                    b.Image = null;
-                    oldImg?.Dispose();
-                }
-            flowDecisions.Controls.Clear();
-
-            if (block.IsFinal) { ShowGameOver(block); return; }
-
-            if (block.Decisions.Count == 0)
-            {
-                flowDecisions.Controls.Add(new Label
-                {
-                    Text = "Nu există acțiuni disponibile.",
-                    ForeColor = Color.FromArgb(180, 180, 160),
-                    AutoSize = true,
-                    Padding = new Padding(8)
-                });
-                return;
-            }
-
-            foreach (var decision in block.Decisions)
-            {
-                bool available = decision.Condition == null
-                    || _engine.EvaluateCondition(decision.Condition);
-                flowDecisions.Controls.Add(CreateDecisionButton(decision, available));
-            }
+            Image oldImg = b.Image;
+            b.Image = null;
+            oldImg?.Dispose();
         }
 
+    flowDecisions.Controls.Clear();
+
+    if (block.IsFinal)
+    {
+        ShowGameOver(block);
+        return;
+    }
+
+    var visibleDecisions = _engine.GetVisibleDecisionsForCurrentBlock();
+
+    if (visibleDecisions.Count == 0)
+    {
+        flowDecisions.Controls.Add(new Label
+        {
+            Text = "Nu există acțiuni disponibile.",
+            ForeColor = Color.FromArgb(180, 180, 160),
+            AutoSize = true,
+            Padding = new Padding(8)
+        });
+        return;
+    }
+
+    foreach (var decision in visibleDecisions)
+    {
+        bool available = decision.Condition == null
+            || _engine.EvaluateCondition(decision.Condition);
+
+        flowDecisions.Controls.Add(CreateDecisionButton(decision, available));
+    }
+}
         private Button CreateDecisionButton(DecisionDefinition decision, bool enabled)
         {
             int btnWidth = flowDecisions.ClientSize.Width > 20
@@ -512,11 +526,49 @@ namespace StoryEngine.Player
 
             base.OnFormClosing(e);
         }
+        private void ShowJournal()
+        {
+            if (_engine == null)
+            {
+                MessageBox.Show("Deschide mai întâi o poveste.", "Jurnal",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
 
+            using var dlg = new JournalForm(_engine.State);
+            dlg.ShowDialog(this);
+        }
+       private void ShowMap()
+        {
+            if (_engine == null || _story == null)
+            {
+                MessageBox.Show("Deschide mai întâi o poveste.", "Hartă",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            using var dlg = new MapForm(_story, _engine, _repo, _currentZipPath);
+
+            if (dlg.ShowDialog(this) != DialogResult.OK)
+                return;
+
+            try
+            {
+                _engine.GoToMapLocation(dlg.SelectedLocation);
+                RefreshAll();
+                SetUiState(_engine.State.IsGameOver ? UiState.GameOver : UiState.Playing);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Nu s-a putut porni expediția:\n{ex.Message}", "Eroare",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
         private void ApplyTheme()
         {
             BackColor = Color.FromArgb(18, 16, 12);
             ForeColor = Color.FromArgb(210, 195, 160);
         }
+        
     }
 }

@@ -438,7 +438,24 @@ namespace StoryEngine.Editor
             while (_story.Properties.Any(p => p.Key == candidate));
             return candidate;
         }
+        private void ShowMapEditor()
+        {
+            if (_story == null)
+            {
+                MessageBox.Show("Nu există nicio poveste deschisă.", "Hartă",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
 
+            using var dlg = new MapEditorForm(_story, _images, _workspaceDir);
+            dlg.ShowDialog(this);
+
+            if (dlg.HasChanges)
+            {
+                MarkDirty();
+                UpdateStatus("Harta de expediție a fost modificată.");
+            }
+        }
         private void MarkDirty()
         {
             _isDirty = true;

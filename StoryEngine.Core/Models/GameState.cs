@@ -35,19 +35,41 @@ namespace StoryEngine.Models
         /// </summary>
         public string LastEffectsSummary { get; set; }
 
-        /// <summary>
+        /// <summary>History of player choices during the current run.</summary>
+        public List<string> Journal { get; set; } = new List<string>();
+        public Dictionary<string, List<string>> RecentEventHistory { get; set; } = new Dictionary<string, List<string>>();
+
+        public int LastExpeditionDay { get; set; } = 0;
+
+        public bool ActiveExpedition { get; set; } = false;
+
+        public List<string> VisitedMapLocations { get; set; } = new List<string>();
+
+        public Dictionary<string, List<string>> RecentDecisionHistory { get; set; } = new Dictionary<string, List<string>>();
+
+        public string CurrentChoiceBlock { get; set; }
+
+        public int CurrentChoiceDay { get; set; }
+
+        public List<string> CurrentChoiceKeys { get; set; } = new List<string>();
+                /// <summary>
         /// Creates a fresh GameState from a StoryDefinition (used on New Game / Restart).
         /// </summary>
         public static GameState CreateNew(StoryDefinition story)
         {
-            var state = new GameState
-            {
-                CurrentBlock = story.StartBlock,
-                Day = 1,
-                IsGameOver = false,
-                LastResultText = null,
-                LastEffectsSummary = null
-            };
+           var state = new GameState
+        {
+            CurrentBlock = story.StartBlock,
+            Day = 1,
+            IsGameOver = false,
+            LastResultText = null,
+            LastEffectsSummary = null,
+            Journal = new List<string>(),
+            RecentEventHistory = new Dictionary<string, List<string>>(),
+            LastExpeditionDay = 0,
+            ActiveExpedition = false,
+            VisitedMapLocations = new List<string>()
+        };
 
             foreach (var prop in story.Properties)
                 state.Properties[prop.Key] = prop.Initial;
