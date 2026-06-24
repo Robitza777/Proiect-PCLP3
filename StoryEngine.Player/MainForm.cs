@@ -121,7 +121,7 @@ namespace StoryEngine.Player
         private void RefreshAll()
         {
             var block = _engine.GetCurrentBlock();
-            RefreshBackground(block.BackgroundImage);
+            RefreshBackground(GetBackgroundForBlock(block));
             RefreshStoryText(block);
             RefreshHud();
             RefreshDecisions(block);
@@ -465,6 +465,70 @@ namespace StoryEngine.Player
             var t = new System.Windows.Forms.Timer { Interval = 2000 };
             t.Tick += (s, e) => { Text = "Story Player"; t.Dispose(); };
             t.Start();
+        }
+        private string GetBackgroundForBlock(StoryBlock block)
+        {
+            if (block == null)
+                return null;
+
+            if (!string.IsNullOrWhiteSpace(block.BackgroundImage))
+                return block.BackgroundImage;
+
+            string id = block.Id ?? "";
+            string category = block.EventCategory ?? "";
+
+            if (id == "hub.main" || id.StartsWith("hub."))
+                return "bg_bunker.png";
+
+            if (category == "exp.school" || id.StartsWith("exp.school"))
+                return "bg_school.png";
+
+            if (category == "exp.market" || id.StartsWith("exp.market"))
+                return "bg_market.png";
+
+            if (category == "exp.forest" || id.StartsWith("exp.forest"))
+                return "bg_forest.png";
+
+            if (category == "exp.radio" || id.StartsWith("exp.radio"))
+                return "bg_radio.png";
+
+            if (category == "exp.military" || id.StartsWith("exp.military"))
+                return "bg_military.png";
+
+            if (category == "exp.tunnel" || id.StartsWith("exp.tunnel"))
+                return "bg_tunnel.png";
+
+            if (category == "exp.pharmacy" || id.StartsWith("exp.pharmacy"))
+                return "bg_pharmacy.png";
+
+            if (category == "exp.waterplant" || id.StartsWith("exp.waterplant"))
+                return "bg_waterplant.png";
+
+            if (category == "exp.lab" || id.StartsWith("exp.lab"))
+                return "bg_lab.png";
+
+            if (category == "exp.power" || id.StartsWith("exp.power"))
+                return "bg_power.png";
+
+            if (category == "exp.greenhouse" || id.StartsWith("exp.greenhouse"))
+                return "bg_greenhouse.png";
+
+            if (category == "exp.evac" || id.StartsWith("exp.evac"))
+                return "bg_evac.png";
+
+            if (category == "shelter.horror" || id.StartsWith("shelter.horror"))
+                return "bg_horror.png";
+
+            if (category == "Crisis" || id.StartsWith("crisis."))
+                return "bg_crisis.png";
+
+            if (category.StartsWith("scout.") || id.StartsWith("scout."))
+                return "bg_wasteland.png";
+
+            if (id.StartsWith("ending."))
+                return "bg_ending.png";
+
+            return "bg_bunker.png";
         }
         private string GetLocationName(StoryBlock block)
         {

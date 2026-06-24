@@ -26,6 +26,7 @@
 
         // Row 2 – main content
         private System.Windows.Forms.Panel panelContent;
+        private System.Windows.Forms.TableLayoutPanel layoutContent;
         private System.Windows.Forms.Panel panelTextOverlay;
         private System.Windows.Forms.PictureBox picBackground;
         private System.Windows.Forms.Label lblDayCounter;
@@ -187,30 +188,39 @@
             panelContent = new System.Windows.Forms.Panel
             {
                 Dock = System.Windows.Forms.DockStyle.Fill,
-                BackColor = System.Drawing.Color.FromArgb(18, 16, 12)
+                BackColor = System.Drawing.Color.FromArgb(18, 16, 12),
+                Padding = new System.Windows.Forms.Padding(10, 6, 10, 6)
             };
 
-            picBackground = new System.Windows.Forms.PictureBox
+            layoutContent = new System.Windows.Forms.TableLayoutPanel
             {
                 Dock = System.Windows.Forms.DockStyle.Fill,
-                SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom,
-                BackColor = System.Drawing.Color.Transparent
+                ColumnCount = 2,
+                RowCount = 1,
+                BackColor = System.Drawing.Color.FromArgb(18, 16, 12),
+                Margin = new System.Windows.Forms.Padding(0),
+                Padding = new System.Windows.Forms.Padding(0)
             };
+
+            layoutContent.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 38));
+            layoutContent.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 62));
+            layoutContent.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100));
 
             panelTextOverlay = new System.Windows.Forms.Panel
             {
                 Dock = System.Windows.Forms.DockStyle.Fill,
-                BackColor = System.Drawing.Color.FromArgb(18, 16, 12),
-                Padding = new System.Windows.Forms.Padding(16, 8, 16, 8)
+                BackColor = System.Drawing.Color.FromArgb(24, 20, 14),
+                Padding = new System.Windows.Forms.Padding(14, 8, 14, 8),
+                Margin = new System.Windows.Forms.Padding(0, 0, 8, 0)
             };
 
             lblDayCounter = new System.Windows.Forms.Label
             {
                 Dock = System.Windows.Forms.DockStyle.Top,
-                Height = 24,
+                Height = 28,
                 Text = "",
                 Font = new System.Drawing.Font("Segoe UI", 9f, System.Drawing.FontStyle.Bold),
-                ForeColor = System.Drawing.Color.FromArgb(160, 140, 80),
+                ForeColor = System.Drawing.Color.FromArgb(190, 165, 90),
                 BackColor = System.Drawing.Color.Transparent,
                 TextAlign = System.Drawing.ContentAlignment.MiddleLeft
             };
@@ -219,19 +229,29 @@
             {
                 Dock = System.Windows.Forms.DockStyle.Fill,
                 ReadOnly = true,
-                BackColor = System.Drawing.Color.FromArgb(20, 17, 11),
-                ForeColor = System.Drawing.Color.FromArgb(215, 200, 165),
-                Font = new System.Drawing.Font("Palatino Linotype", 12f),
+                BackColor = System.Drawing.Color.FromArgb(24, 20, 14),
+                ForeColor = System.Drawing.Color.FromArgb(230, 215, 175),
+                Font = new System.Drawing.Font("Palatino Linotype", 11f),
                 BorderStyle = System.Windows.Forms.BorderStyle.None,
                 ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.Vertical,
                 Text = "Deschide un fișier .zip din meniu pentru a începe."
             };
 
+            picBackground = new System.Windows.Forms.PictureBox
+            {
+                Dock = System.Windows.Forms.DockStyle.Fill,
+                SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom,
+                BackColor = System.Drawing.Color.FromArgb(12, 10, 7),
+                Margin = new System.Windows.Forms.Padding(8, 0, 0, 0)
+            };
+
             panelTextOverlay.Controls.Add(txtStoryText);
             panelTextOverlay.Controls.Add(lblDayCounter);
 
-            panelContent.Controls.Add(panelTextOverlay);
-            panelContent.Controls.Add(picBackground);
+            layoutContent.Controls.Add(panelTextOverlay, 0, 0);
+            layoutContent.Controls.Add(picBackground, 1, 0);
+
+            panelContent.Controls.Add(layoutContent);
 
             // ── Row 3: Decisions ───────────────────────────────────────────
             flowDecisions = new System.Windows.Forms.FlowLayoutPanel
