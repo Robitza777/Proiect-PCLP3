@@ -280,6 +280,7 @@
             this.Size = new System.Drawing.Size(900, 790);
             this.MinimumSize = new System.Drawing.Size(640, 650);
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
+            this.WindowState = System.Windows.Forms.FormWindowState.Maximized;
             this.BackColor = System.Drawing.Color.FromArgb(18, 16, 12);
 
             this.ResumeLayout(false);

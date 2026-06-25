@@ -236,6 +236,7 @@ namespace StoryEngine.Editor
             this.Size = new System.Drawing.Size(1200, 800);
             this.MinimumSize = new System.Drawing.Size(900, 600);
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
+            this.WindowState = System.Windows.Forms.FormWindowState.Maximized;
             this.BackColor = colBg;
             this.ForeColor = colText;
             this.ResumeLayout(false);

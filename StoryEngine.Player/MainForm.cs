@@ -563,13 +563,13 @@ namespace StoryEngine.Player
                 return "Expediția lui Bulă";
 
             if (category == "scout.mara" || id.StartsWith("scout.mara"))
-                return "Expediția Marei";
+                return "Expediția lui Zoly";
 
             if (category == "scout.vlad" || id.StartsWith("scout.vlad"))
-                return "Expediția lui Vlad";
+                return "Expediția lui Robitza";
 
             if (category == "scout.irina" || id.StartsWith("scout.irina"))
-                return "Expediția Irinei";
+                return "Expediția Denisucăi";
 
             if (category == "exp.school" || id.StartsWith("exp.school"))
                 return "Școala prăbușită";
